@@ -1,15 +1,50 @@
 # Initialize PaddleOCR instance
 
 from Exporter import AnkiExporter
-from OCR import PaddleOCRWrapper as OCR
 from Parser import Parser
 from tqdm import tqdm
+from argparse import ArgumentParser
+from AnkiVocabularyParser.SpellChecker import SpellCheckerEngine
+from OCR import OCREngine, OCR
+
+def parse_arguments():
+    parser = ArgumentParser("VocabularyParser")
+    parser.add_argument("title")
+    parser.add_argument("lang_left", choices=['de', 'it', 'es', 'fr', 'en'])
+    parser.add_argument("lang_right", choices=['de', 'it', 'es', 'fr', 'en'])
+    parser.add_argument("--ocr_engine", choices=OCREngine._member_names_, default=OCREngine.EasyOCR)
+    parser.add_argument("--spellcheck_engine", choices=SpellCheckerEngine._member_names_, default=SpellCheckerEngine.PythonSpell)
+
+    return parser.parse_args()
+
+class AnkiVocParser:
+    def __init__(self, args):
+        self.parser = Parser()
+        self.ocr = OCR()
+        self.exporter = AnkiExporter(args.title, lang0=args.lang_left, lang1=args.lang_right)
+
+    def run(self, voc_list):
+        bar0 = tqdm(total=len(voc_list),position=0) 
+        for lection, img_list in voc_list.items():
+            bar0.set_description(f"Processing {lection}")
+            bar0.update(1)
+            bar1 = tqdm(total=len(img_list),position=1) 
+            for img_path in img_list:
+                bar1.set_description(f"  Processing {img_path}")
+                bar1.update(1)
+                parsed_ocr = self.ocr.read(img_path)
+                parsed_ocr = img_path.replace("input/", "output/").removesuffix(".PNG") + "_res.json"
+                results = self.parser.parse(parsed_ocr) 
+                for result in results:
+                    self.exporter.add(result)
+            self.exporter.save(f"{lection}")
+    
+
+
 
 if __name__ == "__main__":
-    parser = Parser()
-    #ocr = OCR()
-    exporter = AnkiExporter("Fantastico! A1", lang0="IT", lang1="DE")
-    
+    args = parse_arguments()
+    avp = AnkiVocParser(args)
     voc_list = {
         "00 - Bevenuti":[
             "input/1_bevenuti_1.PNG",
@@ -70,18 +105,4 @@ if __name__ == "__main__":
         "15 - Rivediamo 3":[
             "input/15_rivediamo_1.PNG",
         ]}
-    bar0 = tqdm(total=len(voc_list),position=0) 
-    for lection, img_list in voc_list.items():
-        bar0.set_description(f"Processing {lection}")
-        bar0.update(1)
-        bar1 = tqdm(total=len(img_list),position=1) 
-        for img_path in img_list:
-            bar1.set_description(f"  Processing {img_path}")
-            bar1.update(1)
-            #parsed_ocr = ocr.read(img_path)
-            parsed_ocr = img_path.replace("input/", "output/").removesuffix(".PNG") + "_res.json"
-            results = parser.parse(parsed_ocr) 
-            for result in results:
-                exporter.add(result)
-        exporter.save(f"{lection}")
-    
+    avp.run(voc_list)

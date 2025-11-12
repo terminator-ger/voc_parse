@@ -1,13 +1,13 @@
 # Initialize PaddleOCR instance
-from sklearn.cluster import KMeans, OPTICS, AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering
 import json
 import numpy as np
-from scipy.spatial import distance_matrix
 import re
+from VocabularyParser.SpellChecker import getSpellChecker
 
 class Parser:
-    def __init__(self):
-        None
+    def __init__(self, config):
+        self.checker = getSpellChecker(config)
     
     def parse(self, json_file):
         data = json.load(open(json_file, 'r', encoding='utf-8'))
@@ -16,9 +16,7 @@ class Parser:
                                           linkage="single", 
                                           distance_threshold=25)
         x_left = [poly[0][0] for poly in data['rec_polys']]
-        y_left = [poly[0][1] for poly in data['rec_polys']]
         x_left = np.array(x_left).reshape(-1, 1)
-        #x_left_normalized = (x_left - np.min(x_left)) / (np.max(x_left) - np.min(x_left))
         cluster.fit_predict(x_left)
         num_rows = len(set(cluster.labels_))
 
@@ -27,8 +25,8 @@ class Parser:
         for idx, j in enumerate(cluster.labels_):
                 text[j].append(data['rec_texts'][idx])
                 boxes[j].append(data['rec_polys'][idx])
+        
         # order clusters left to right
-        #cluster_centers = cluster.cluster_centers_.flatten() 
         cluster_centers = [np.median(x_left[np.array(cluster.labels_)==i]) for i in range(num_rows)]
         sorted_indices = np.argsort(cluster_centers)
         text = [text[i] for i in sorted_indices]
@@ -51,9 +49,15 @@ class Parser:
                                    text_merged.pop(0), 
                                    boxes_merged.pop(0), 
                                    text_merged.pop(0)) for _ in range(len(boxes)//2)]
-        
+
+        results = [self.check_spelling(res) for res in results] 
         results = [self.add_html(res) for res in results]
         return results
+    
+    def check_spelling(self, results):
+        for idx, (it, de) in enumerate(results):
+            results[idx] = self.check_spelling.check(it, de)
+        
     
     def add_html(self, results):
         for idx, (it, de) in enumerate(results):

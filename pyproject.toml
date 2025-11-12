@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools==72.1.0", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vocabulary_parser"
+# After each version release, the version number needs to be incremented
+dynamic = ["version"]
+description = "Tool to help you setup ANKI wordcards"
+authors = [
+    {name = "terminator-ger", email = "github@theterminator.e4ward.com"},
+]
+maintainers = [
+    {name = "terminator-ger", email = "github@theterminator.e4ward.com"},
+]
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = [
+    "ocr",
+    "textdetection",
+    "textrecognition",
+    "anki",
+    "vocabulary",
+    "wordcard",
+]
+license = {text = "Apache License 2.0"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+]
+
+[options]
+install_requires = file: requirements.txt
+
+[project.urls]
+homepage = "https://github.com/terminator-ger/AnkiVocabularyParser"
+documentation = "https://github.com/terminator-ger/AnkiVocabularyParser/blob/main/README.md"
+repository = "https://github.com/terminator-ger/AnkiVocabularyParser.git"
+issues = "https://github.com/terminator-ger/AnkiVocabularyParser/issues"
+
+[project.scripts]
+paddleocr = "paddleocr.__main__:console_entry"
+
+[project.optional-dependencies]
+PaddleOCR = ["paddlepaddle-gpu", "paddleocr"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["AnkiVocabularyParser"]
+namespaces = false
+
+[tool.setuptools_scm]
+version_scheme = 'release-branch-semver'
+
+[tool.pytest.ini_options]
+markers = [
+    "resource_intensive: mark a test as resource intensive"
+]
+addopts = "-m 'not resource_intensive'"

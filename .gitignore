@@ -3,3 +3,4 @@ output/**
 venv/**
 processed/**
 *.pyc
+Notebook
